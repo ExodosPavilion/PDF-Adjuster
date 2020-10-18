@@ -1,14 +1,16 @@
 # importing the required modules 
 import PyPDF2 
+from pick import pick
+from pick import Picker
 
 
 #link to refer to
 #	https://www.geeksforgeeks.org/working-with-pdf-files-in-python/
 
 
-def PdfRotateAll(origFileName, newFileName, rotation): 
-	# creating a pdf File object of original pdf 
-	originalPdfFileObj = open(origFileName, 'rb') 
+def PdfRotateSet(orignalFileName, newFileName, rotation, pages):
+		# creating a pdf File object of original pdf 
+	originalPdfFileObj = open(orignalFileName, 'rb') 
 	
 	# creating a pdf Reader object 
 	pdfReader = PyPDF2.PdfFileReader(originalPdfFileObj) 
@@ -16,15 +18,29 @@ def PdfRotateAll(origFileName, newFileName, rotation):
 	# creating a pdf writer object for new pdf 
 	pdfWriter = PyPDF2.PdfFileWriter() 
 	
-	# rotating each page 
-	for page in range(pdfReader.numPages): 
+	if type(pages) == int:
+		# rotating each page 
+		for page in range(pdfReader.numPages): 
+			# creating rotated page object 
+			pageObj = pdfReader.getPage(page)
+			
+			if page == (pages - 1):
+				pageObj.rotateClockwise(rotation) 
 
-		# creating rotated page object 
-		pageObj = pdfReader.getPage(page) 
-		pageObj.rotateClockwise(rotation) 
+			# adding rotated page object to pdf writer 
+			pdfWriter.addPage(pageObj)
+	else:
+		# rotating each page 
+		for page in range(pdfReader.numPages): 
 
-		# adding rotated page object to pdf writer 
-		pdfWriter.addPage(pageObj) 
+			# creating rotated page object 
+			pageObj = pdfReader.getPage(page)
+			
+			if page in pages:
+				pageObj.rotateClockwise(rotation) 
+
+			# adding rotated page object to pdf writer 
+			pdfWriter.addPage(pageObj)
 
 	# new pdf file object 
 	newFile = open(newFileName, 'wb') 
@@ -37,6 +53,18 @@ def PdfRotateAll(origFileName, newFileName, rotation):
 	
 	# closing the new pdf file object 
 	newFile.close() 
+
+	
+def getNumberOfPages(fileName):
+	# creating a pdf File object of pdf 
+	pdfFileObj = open(fileName, 'rb') 
+	
+	# creating a pdf Reader object 
+	pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+	
+	#return the number of pages in the pdf
+	return pdfReader.numPages
+	
 	
 
 def getIntInput(prompt):
@@ -50,7 +78,43 @@ def getIntInput(prompt):
 	return value
 	
 
-def getRotationInfo():
+def optionSelector(title, options, multi=False, minimumSelection=1, outputOption=0):
+	selectedOptionNames = []
+	selectedIndexes = []
+	selectedOption = None
+	selectedIndex = None
+	
+	if type(title) != str or type(options) != list or type(multi) != bool or type(minimumSelection) != int or type(outputOption) != int:
+		raise TypeError
+	else:
+		selected = pick(options, title, multiselect=multi, min_selection_count=minimumSelection)
+		
+		if multi:
+			for i in selected:
+				selectedOptionNames.append(i[0])
+				selectedIndexes.append(i[1])
+		else:
+			selectedOption = selected[0]
+			selectedIndex = selected[1]
+		
+		if outputOption == 1:
+			if multi:
+				return selectedIndexes
+			else:
+				return selectedIndex
+		elif outputOption == 2:
+			if multi:
+				return selectedOptionNames
+			else:
+				return selectedOption
+		else:
+			if multi:
+				return selectedOptionNames, selectedIndexes
+			else:
+				return selectedOption, selectedIndex
+			
+
+def rotate():
 	print("Please enter how much you want to rotate the page(s) by")
 	print("Note that the script will only accept values in increments of 90 degrees")
 	print("Using a negative ( - ) will rotate the page(s) counter-clockwise")
@@ -65,7 +129,7 @@ def getRotationInfo():
 			print("Please enter a multiple of 90\n")
 		else:
 			break
-	
+			
 	print("\nPlease enter the name of the file you wish to rotate")
 	print("(Note that the file needs to be in the same directory as the script [for now]")
 	print("The file NEEDS TO BE A PDF, the script requires that you enter the name with the .pdf extension\n")
@@ -88,13 +152,41 @@ def getRotationInfo():
 	elif newFileName[-4:] != '.pdf':
 		newFileName += '.pdf'
 		print("Name does not contain .pdf extension, adding the extension through scirpt so '" + newFileName + "' will be the new file's name")
+	
+	
+	selectOptionTitle = 'Would you like to (go to option and press enter):'
+	options = ['Rotate a set of pages (e.g rotate only pages 1-5 and not the rest)', 'Rotate only one page', 'Rotate all the pages']
+	selectedOption, selectedIndex = optionSelector(selectOptionTitle, options)
+	
+	if selectedIndex == 0:
+		numPages = getNumberOfPages(originalFileName)
+		#Setting outputOption = 1 since pdfReader.getPage uses list / array style to refer to pages
+		pageList = optionSelector('Please choose pages you want to rotate (press SPACE to mark, ENTER to continue): ', list(range(1, numPages+1)), True, 1, 1)
+		PdfRotateSet(originalFileName, newFileName, rotationAngle, pageList)
 		
-	PdfRotateAll(originalFileName, newFileName, rotationAngle)
+	elif selectedIndex == 1:
+		numPages = getNumberOfPages(originalFileName)
+		page = getIntInput('Please enter a number between 1 and ' + str(numPages) + ' : ')
+		PdfRotateSet(originalFileName, newFileName, rotationAngle, page)
+		
+	elif selectedIndex == 2:
+		numPages = getNumberOfPages(originalFileName)
+		PdfRotateSet(originalFileName, newFileName, rotationAngle, list(range(0, numPages+1)))
 	
 	print("\nDone rotation")
 
+	
+def testPick():
+	selectOptionTitle = 'Would you like to (go to option and press enter):'
+	options = ['Rotate a set of pages (e.g rotate only pages 1-5 and not the rest)', 'Rotate only one page', 'Rotate all the pages']
+	selectedOption, selectedIndex = pick(options, selectOptionTitle)
+	print(type(selectedIndex))
+	print(selectedIndex)
+
+
+
 def main():
-	getRotationInfo()
+	rotate()
 
 if __name__ == "__main__": 
 	# calling the main function 
