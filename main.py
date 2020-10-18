@@ -54,6 +54,28 @@ def PdfRotateSet(orignalFileName, newFileName, rotation, pages):
 	# closing the new pdf file object 
 	newFile.close() 
 
+
+def PDFmerge(pdfs, output):  
+	# creating pdf file merger object 
+	pdfMerger = PyPDF2.PdfFileMerger() 
+	
+	pdfFiles = []
+	
+	#Doing it like so to ensure that the file stay open while PdfFileMerger does its work
+	for file in pdfs:
+		pdfFiles.append( open(file, 'rb') )
+	
+	# appending pdfs one by one 
+	for pdf in pdfFiles: 
+		pdfMerger.append(pdf) 
+          
+	# writing combined pdf to output pdf file 
+	with open(output, 'wb') as f: 
+		pdfMerger.write(f) 
+	
+	for file in pdfFiles:
+		file.close()
+		
 	
 def getNumberOfPages(fileName):
 	# creating a pdf File object of pdf 
@@ -151,7 +173,7 @@ def rotate():
 		print("No name entered, using " + newFileName + " as the new file's name")
 	elif newFileName[-4:] != '.pdf':
 		newFileName += '.pdf'
-		print("Name does not contain .pdf extension, adding the extension through scirpt so '" + newFileName + "' will be the new file's name")
+		print("Name does not contain .pdf extension, adding the extension through the scirpt so '" + newFileName + "' will be the new file's name")
 	
 	
 	selectOptionTitle = 'Would you like to (go to option and press enter):'
@@ -175,6 +197,67 @@ def rotate():
 	
 	print("\nDone rotation")
 
+
+
+def merge():
+	mergeNum = None
+	fileNames = []
+	
+	while True:
+		print('How many PDF\'s are you merging?')
+		print('[Minimum of 2 (ofcorse)]')
+		mergeNum = getIntInput('')
+	
+		confirmation = optionSelector( ('You want to merge ' + str(mergeNum) + ' PDF\'s?'), ['Yes', 'No'], outputOption = 2)
+		
+		if confirmation == 'Yes':
+			break
+			
+	if mergeNum != None:
+		index = 0
+		
+		print('\nPlease enter the names of the ' + str(mergeNum) + ' files you wish to merge')
+		print('The files will be merged in the order you enter them. (e.g. if you enter "file1.pdf" then "file2.pdf" then the merge order will be "file1" then "file2"')
+		print("(Note that the files need to be in the same directory as the script [for now]")
+		print("The file NEEDS TO BE A PDF, the script requires that you enter the name with the .pdf extension\n")
+	
+		while index < mergeNum:
+			while True:
+				fileName = input('File number ' + str(index + 1) + ' : ').strip()
+			
+				if fileName[-4:] == '.pdf':
+					fileNames.append(fileName)
+					index += 1
+					break
+				else:
+					print("Please make sure the file name has the .pdf extension at the end\n")
+					
+		allFileNamesString = ''
+		
+		for i in range(len(fileNames)):
+			if ( i == (len(fileNames) + 1) ):
+				allFileNamesString += fileNames[i]
+			else:
+				allFileNamesString += fileNames[i] + ', '
+				
+		print('The following files will be merged: ')
+		print('\t' + allFileNamesString)
+				
+		print("\nPlease enter the new name you wish to give to the merged file")
+		print("(Note: no name will simply use the name of the first file followed by '-merged' at the end)\n")
+		newFileName = input("New file name: ").strip()
+		
+		if newFileName == '':
+			newFileName += fileNames[0][:-4] + '-merged' + '.pdf'
+			print("No name entered, using " + newFileName + " as the new file's name")
+		elif newFileName[-4:] != '.pdf':
+			newFileName += '.pdf'
+			print("Name does not contain .pdf extension, adding the extension through the scirpt so '" + newFileName + "' will be the new file's name")
+			
+		PDFmerge(fileNames, newFileName)
+		
+		print("\nDone merging")
+	
 	
 def testPick():
 	selectOptionTitle = 'Would you like to (go to option and press enter):'
@@ -186,7 +269,7 @@ def testPick():
 
 
 def main():
-	rotate()
+	getMergeInfo()
 
 if __name__ == "__main__": 
 	# calling the main function 
