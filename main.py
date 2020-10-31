@@ -1,5 +1,5 @@
 # importing the required modules 
-import PyPDF2 
+import PyPDF2, os
 from pick import pick
 from pick import Picker
 
@@ -87,9 +87,20 @@ def getNumberOfPages(fileName):
 	#return the number of pages in the pdf
 	return pdfReader.numPages
 	
+
+def getLocalpdfFiles():
+	pdfFiles = []
+	allItems = os.listdir()
+	
+	for item in allItems:
+		if os.path.isfile(item) and item[-4:] == '.pdf':
+			pdfFiles.append(item)
+
+	return pdfFiles
 	
 
 def getIntInput(prompt):
+	#keep asking until the user until they enter a valid integer response
 	while True:
 		try:
 			value = int(input(prompt).strip())
@@ -101,14 +112,27 @@ def getIntInput(prompt):
 	
 
 def optionSelector(title, options, multi=False, minimumSelection=1, outputOption=0):
-	selectedOptionNames = []
+	'''
+		outputOptions:
+			0: returns both the index / indexes and the selected option name(s)
+			1: returns only the index / indexes
+			2: returns only the selected option name(s)
+	'''
+	#Use the pick (curses) module to make the user select from preset set of options
+	
+	#Used when multi (multi-selection) is set to True
+	selectedOptionNames = [] 
 	selectedIndexes = []
+	
+	#Used when multi (multi-selection) is set to False
 	selectedOption = None
 	selectedIndex = None
 	
+	#if there are no problems with the data being passes in
 	if type(title) != str or type(options) != list or type(multi) != bool or type(minimumSelection) != int or type(outputOption) != int:
 		raise TypeError
 	else:
+		#ask the user to choose an option
 		selected = pick(options, title, multiselect=multi, min_selection_count=minimumSelection)
 		
 		if multi:
@@ -136,34 +160,29 @@ def optionSelector(title, options, multi=False, minimumSelection=1, outputOption
 				return selectedOption, selectedIndex
 			
 
-def rotate():
-	print("Please enter how much you want to rotate the page(s) by")
-	print("Note that the script will only accept values in increments of 90 degrees")
-	print("Using a negative ( - ) will rotate the page(s) counter-clockwise")
-	print("Generally: ")
-	print("\t90: rotate page(s) right\n\t180: turn page(s) around\n\t-270: rotate page(s) right 3 times (basically rotates the page left")
-	print("\t-90: rotate page(s) left\n\t-180: turn page(s) around\n\t-270: rotate page(s) left 3 times (basically rotates the page right\n")
+def getRotateInfo():
+	'''
+	Parameters: None
+	Return: None
 	
-	while True:
-		rotationAngle = getIntInput("Rotation amount (in degrees): ")
-		
-		if (rotationAngle % 90) != 0:
-			print("Please enter a multiple of 90\n")
-		else:
-			break
-			
-	print("\nPlease enter the name of the file you wish to rotate")
-	print("(Note that the file needs to be in the same directory as the script [for now]")
-	print("The file NEEDS TO BE A PDF, the script requires that you enter the name with the .pdf extension\n")
-	
-	while True:
-		originalFileName = input("File name: ").strip()
-		
-		if originalFileName[-4:] == '.pdf':
-			break
-		else:
-			print("Please make sure the file name has the .pdf extension at the end\n")
-	
+	Description:
+		Allows the user to rotate PDF's.
+		The funtion will query the user for the rotation angle, pdf file location, rotated pdf file name, what pages to rotate
+	'''
+	rotationOptions = ['90: rotate page(s) right', '180: turn page(s) around', '270: rotate page(s) right 3 times (basically rotates the page left")', '-90: rotate page(s) left', '-180: turn page(s) around', '-270: rotate page(s) left 3 times (basically rotates the page right']
+	rotationDegress = [90, 180, 270, -90, -180, -270]
+
+	rotationDegreeIndex = optionSelector('Please select the rotation amount:', rotationOptions, multi=False, minimumSelection=1, outputOption=1)
+	rotationAngle = rotationDegress[ rotationDegreeIndex ]
+
+	localFiles = getLocalpdfFiles()
+
+	if localFiles != []:
+		originalFileName = optionSelector('Please select the file you wish to rotate the pages of:', localFiles, multi=False, minimumSelection=1, outputOption=2)
+	else:
+		print('Please place the script and the PDF(s) in the same folder')
+		return
+
 	print("\nPlease enter the new name you wish to give the file")
 	print("(Note: no name will simply use the original name and add '-rotated-[degree]' at the end)\n")
 	newFileName = input("New file name: ").strip()
@@ -174,6 +193,8 @@ def rotate():
 	elif newFileName[-4:] != '.pdf':
 		newFileName += '.pdf'
 		print("Name does not contain .pdf extension, adding the extension through the scirpt so '" + newFileName + "' will be the new file's name")
+
+	input('\nPress enter to continue')
 	
 	
 	selectOptionTitle = 'Would you like to (go to option and press enter):'
@@ -199,9 +220,18 @@ def rotate():
 
 
 
-def merge():
-	mergeNum = None
-	fileNames = []
+def getMergeInfo():
+	'''
+	Parameters: None
+	Return: None
+
+	Description:
+		Allows the user to merge PDF files
+		Queries the user for the number of PDF's to merge, their file names, new PDF name for the merged PDF
+	'''
+	
+	mergeNum = None #number of PDF's to merge
+	fileNames = [] #names of the files to be merged
 	
 	while True:
 		print('How many PDF\'s are you merging?')
@@ -240,7 +270,7 @@ def merge():
 			else:
 				allFileNamesString += fileNames[i] + ', '
 				
-		print('The following files will be merged: ')
+		print('The following files will be merged in the mentioned order: ')
 		print('\t' + allFileNamesString)
 				
 		print("\nPlease enter the new name you wish to give to the merged file")
@@ -269,7 +299,12 @@ def testPick():
 
 
 def main():
-	getMergeInfo()
+	mainIndexSelection = optionSelector('Please select what you want to do', ['Rotate Page(s) in a PDF', 'Merge PDFs'], outputOption=1)
+	
+	if mainIndexSelection == 0:
+		getRotateInfo()
+	elif mainIndexSelection  == 1:
+		getMergeInfo()
 
 if __name__ == "__main__": 
 	# calling the main function 
